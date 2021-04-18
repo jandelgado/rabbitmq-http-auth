@@ -1,0 +1,16 @@
+version: '3'
+services:
+  auth-http:
+    build:
+      context: ../
+    ports:
+      - "8000:8000"
+
+  rabbitmq:
+     image: rabbitmq:3.8-management-alpine
+     volumes:
+       - ./definitions.json:/etc/rabbitmq/definitions.json:z
+       - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:z
+     ports:
+       - 5672:5672
+       - 15672:15672
