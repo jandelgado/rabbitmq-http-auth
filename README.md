@@ -1,20 +1,88 @@
 # RabbitMQ HTTP Auth Backend in Go
 
-Package and example service to build a RabbitMQ HTTP service for use with
+[![run tests](https://github.com/jandelgado/rabbitmq-http-auth/actions/workflows/test.yml/badge.svg)](https://github.com/jandelgado/rabbitmq-http-auth/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/jandelgado/rabbitmq-http-auth/badge.svg?branch=main)](https://coveralls.io/github/jandelgado/rabbitmq-http-auth?branch=main)
+
+Package and example service to build a RabbitMQ HTTP Auth service for use with
 the RabbitMQ "HTTP Auth Backend" (actually it is an AuthN/AuthZ backend).
 
 For details see https://github.com/rabbitmq/rabbitmq-server/tree/master/deps/rabbitmq_auth_backend_http
 
+<!-- vim-markdown-toc GFM -->
+
+* [Build your own service](#build-your-own-service)
+* [Test it](#test-it)
+* [Test with RabbitMQ](#test-with-rabbitmq)
+* [Author & License](#author--license)
+
+<!-- vim-markdown-toc -->
+
 ## Build your own service
 
-TODO
+To build an RabbitMQ HTTP Auth Backend, you just need to implement the provided
+`Authenticator` interface, which will be called by `POST` requests to the paths
+`/auth/user`, `/auth/vhost`, `/auth/topic` and `/auth/resource`:
 
-## Testing it
+```go
+type Decision bool
 
-After starting the demo app either manually or by running 
-`docker docker run --rm -ti -p8000:8000 rabbitmq-http-auth:latest`, we
-can test the service by issueing POST requests to the `User` endpoint , 
-for example:
+type Authenticator interface {
+	// User authenticates the given user. In addition to the decision, the tags
+	// associated with the user are returned.
+	User(username, password string) (Decision, string)
+	// VHost checks if the given user/ip combination is allowed to access the
+	// vhosts
+	VHost(username, vhost, ip string) Decision
+	// Resource checks if the given user has access to the presented resource
+	Resource(username, vhost, resource, name, permission string) Decision
+	// Topic checks if the given user has access to the presented topic when
+	// using topic authorization (https://www.rabbitmq.com/access-control.html#topic-authorisation)
+	Topic(username, vhost, resource, name, permission, routing_key string) Decision
+}
+```
+
+Start a web server using your authenticator and the http router provided
+by the `rabbitmqauth.AuthServer.NewRouter()` function like:
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"time"
+
+	auth "github.com/jandelgado/rabbitmq-http-auth/pkg"
+)
+
+const httpReadTimeout = 10 * time.Second
+const httpWriteTimeout = 10 * time.Second
+
+func main() {
+	authenticator := NewLogInterceptingAuthenticator(DemoAuthenticator{})
+	s := auth.NewAuthServer(authenticator)
+
+	srv := &http.Server{
+		Handler:      s.NewRouter(),
+		Addr:         fmt.Sprintf(":%d", 8000),
+		WriteTimeout: httpWriteTimeout,
+		ReadTimeout:  httpReadTimeout,
+	}
+
+	err := srv.ListenAndServe()
+
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+Have a look at the [example](cmd/example) for a complete example.
+
+## Test it
+
+Start the example by running `make build && make run` and then test the service
+by issueing POST requests to the `User` endpoint , for example:
 
 ```sh
 $ curl  -XPOST localhost:8000/auth/user -d "username=guest&pasword=test"
@@ -23,8 +91,8 @@ $ curl  -XPOST localhost:8000/auth/user -d "username=john&pasword=test"
 deny
 ```
 
-Since the `DemoAuthenticator` only allows the `guest` user, this is the
-expected result.
+Since the `DemoAuthenticator` only allows the `guest` user (but with any
+password), this is the expected result.
 
 ## Test with RabbitMQ
 
