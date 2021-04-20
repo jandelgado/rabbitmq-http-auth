@@ -14,8 +14,7 @@ const httpReadTimeout = 10 * time.Second
 const httpWriteTimeout = 10 * time.Second
 
 func main() {
-	a := DemoAuthenticator{}
-	authenticator := auth.NewLogInterceptingAuthenticator(a)
+	authenticator := NewLogInterceptingAuthenticator(DemoAuthenticator{})
 	s := auth.NewAuthServer(authenticator)
 
 	srv := &http.Server{

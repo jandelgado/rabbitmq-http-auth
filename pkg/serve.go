@@ -5,13 +5,7 @@ package rabbitmqauth
 import (
 	"fmt"
 	"net/http"
-	"time"
-
-	"github.com/gorilla/mux"
 )
-
-const httpReadTimeout = 15 * time.Second
-const httpWriteTimeout = 45 * time.Second
 
 type AuthServer struct {
 	authenticator Authenticator
@@ -66,11 +60,22 @@ func (s *AuthServer) resourceHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", res)
 }
 
+func postHandler(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			handler(w, r)
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			_, _ = w.Write([]byte("405 method not allowed"))
+		}
+	}
+}
+
 func (s *AuthServer) NewRouter() http.Handler {
-	router := mux.NewRouter()
-	router.HandleFunc("/auth/user", s.userHandler).Methods("POST")
-	router.HandleFunc("/auth/vhost", s.vhostHandler).Methods("POST")
-	router.HandleFunc("/auth/resource", s.resourceHandler).Methods("POST")
-	router.HandleFunc("/auth/topic", s.topicHandler).Methods("POST")
+	router := http.NewServeMux()
+	router.HandleFunc("/auth/user", postHandler(s.userHandler))
+	router.HandleFunc("/auth/vhost", postHandler(s.vhostHandler))
+	router.HandleFunc("/auth/resource", postHandler(s.resourceHandler))
+	router.HandleFunc("/auth/topic", postHandler(s.topicHandler))
 	return router
 }
