@@ -39,9 +39,9 @@ func (s LogInterceptingAuthenticator) Resource(username, vhost, resource, name, 
 	return res
 }
 
-func (s LogInterceptingAuthenticator) Topic(username, vhost, resource, name, permission, routing_key string) auth.Decision {
-	res := s.authenticator.Topic(username, vhost, resource, name, permission, routing_key)
+func (s LogInterceptingAuthenticator) Topic(username, vhost, resource, name, permission, routingKey string) auth.Decision {
+	res := s.authenticator.Topic(username, vhost, resource, name, permission, routingKey)
 	log.Printf("auth topic(u=%s,v=%s,r=%s,n=%s,p=%s,k=%s) -> %v",
-		username, vhost, resource, name, permission, routing_key, res)
+		username, vhost, resource, name, permission, routingKey, res)
 	return res
 }

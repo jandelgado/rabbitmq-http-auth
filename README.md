@@ -37,7 +37,7 @@ type Authenticator interface {
 	Resource(username, vhost, resource, name, permission string) Decision
 	// Topic checks if the given user has access to the presented topic when
 	// using topic authorization (https://www.rabbitmq.com/access-control.html#topic-authorisation)
-	Topic(username, vhost, resource, name, permission, routing_key string) Decision
+	Topic(username, vhost, resource, name, permission, routingKey string) Decision
 }
 ```
 
@@ -85,9 +85,9 @@ Start the example by running `make build && make run` and then test the service
 by issueing POST requests to the `User` endpoint , for example:
 
 ```sh
-$ curl  -XPOST localhost:8000/auth/user -d "username=guest&pasword=test"
+$ curl  -XPOST localhost:8000/auth/user -d "username=guest&password=test"
 allow [management administrator demo]
-$ curl  -XPOST localhost:8000/auth/user -d "username=john&pasword=test"
+$ curl  -XPOST localhost:8000/auth/user -d "username=john&password=test"
 deny
 ```
 

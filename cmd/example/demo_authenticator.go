@@ -26,6 +26,6 @@ func (s DemoAuthenticator) VHost(username, vhost, ip string) auth.Decision {
 	return true
 }
 
-func (s DemoAuthenticator) Topic(username, vhost, resource, name, permission, routing_key string) auth.Decision {
+func (s DemoAuthenticator) Topic(username, vhost, resource, name, permission, routingKey string) auth.Decision {
 	return true
 }
