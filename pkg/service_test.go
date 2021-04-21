@@ -11,25 +11,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockAuthenticator struct{}
+type MockAuth struct{}
 
-func (s MockAuthenticator) String() string {
-	return "MockAuthenticator"
+func (s MockAuth) String() string {
+	return "MockAuth"
 }
 
-func (s MockAuthenticator) User(username, password string) (Decision, string) {
+func (s MockAuth) User(username, password string) (Decision, string) {
 	return username == "a" && password == "b", "management"
 }
 
-func (s MockAuthenticator) VHost(username, vhost, ip string) Decision {
+func (s MockAuth) VHost(username, vhost, ip string) Decision {
 	return username == "a" && vhost == "b" && ip == "c"
 }
 
-func (s MockAuthenticator) Resource(username, vhost, resource, name, permission string) Decision {
+func (s MockAuth) Resource(username, vhost, resource, name, permission string) Decision {
 	return username == "a" && vhost == "b" && resource == "c" && name == "d" && permission == "e"
 }
 
-func (s MockAuthenticator) Topic(username, vhost, resource, name, permission, routingKey string) Decision {
+func (s MockAuth) Topic(username, vhost, resource, name, permission, routingKey string) Decision {
 	return username == "a" && vhost == "b" && resource == "c" && name == "d" && permission == "e" && routingKey == "f"
 }
 
@@ -50,7 +50,7 @@ func TestPostHandlerReturns405OnGET(t *testing.T) {
 	cases := []string{"/auth/user", "/auth/vhost", "/auth/resource", "/auth/topic"}
 
 	for _, path := range cases {
-		auth := NewAuthServer(MockAuthenticator{})
+		auth := NewAuthService(MockAuth{})
 		handlerFunc := auth.NewRouter()
 
 		req, err := http.NewRequest("GET", path, nil)
@@ -65,7 +65,7 @@ func TestPostHandlerReturns405OnGET(t *testing.T) {
 }
 
 func TestUserRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
-	auth := NewAuthServer(MockAuthenticator{})
+	auth := NewAuthService(MockAuth{})
 	srv := httptest.NewServer(auth.NewRouter())
 	defer srv.Close()
 
@@ -86,7 +86,7 @@ func TestUserRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
 }
 
 func TestVHostRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
-	auth := NewAuthServer(MockAuthenticator{})
+	auth := NewAuthService(MockAuth{})
 	srv := httptest.NewServer(auth.NewRouter())
 	defer srv.Close()
 
@@ -107,7 +107,7 @@ func TestVHostRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
 }
 
 func TestResourceRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
-	auth := NewAuthServer(MockAuthenticator{})
+	auth := NewAuthService(MockAuth{})
 	srv := httptest.NewServer(auth.NewRouter())
 	defer srv.Close()
 
@@ -128,7 +128,7 @@ func TestResourceRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
 }
 
 func TestTopicRequestIsAllowedOnlyOnValidRequests(t *testing.T) {
-	auth := NewAuthServer(MockAuthenticator{})
+	auth := NewAuthService(MockAuth{})
 	srv := httptest.NewServer(auth.NewRouter())
 	defer srv.Close()
 

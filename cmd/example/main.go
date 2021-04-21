@@ -1,5 +1,5 @@
-// rabbitmq-http-auth - exmple authentication service using a demo authenticator
-// (c) copyright 2021 by Jan Delgadoauthenticator}
+// rabbitmq-http-auth - exmaple rabbitmq http auth backend service
+// (c) copyright 2021 by Jan Delgado
 package main
 
 import (
@@ -7,24 +7,24 @@ import (
 	"net/http"
 	"time"
 
-	auth "github.com/jandelgado/rabbitmq-http-auth/pkg"
+	rabbitmqauth "github.com/jandelgado/rabbitmq-http-auth/pkg"
 )
 
 const httpReadTimeout = 10 * time.Second
 const httpWriteTimeout = 10 * time.Second
 
 func main() {
-	authenticator := NewLogInterceptingAuthenticator(DemoAuthenticator{})
-	s := auth.NewAuthServer(authenticator)
+	auth := NewLogInterceptingAuth(DemoAuth{})
+	service := rabbitmqauth.NewAuthService(auth)
 
-	srv := &http.Server{
-		Handler:      s.NewRouter(),
+	server := &http.Server{
+		Handler:      service.NewRouter(),
 		Addr:         fmt.Sprintf(":%d", 8000),
 		WriteTimeout: httpWriteTimeout,
 		ReadTimeout:  httpReadTimeout,
 	}
 
-	err := srv.ListenAndServe()
+	err := server.ListenAndServe()
 
 	if err != nil {
 		panic(err)

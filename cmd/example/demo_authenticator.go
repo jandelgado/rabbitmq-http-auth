@@ -1,4 +1,4 @@
-// rabbitmq-http-auth - demo implementation of the Authenticator interface,
+// rabbitmq-http-auth - demo implementation of the Auth interface,
 // which allows the user guest with ANY password to be authorized for
 // everything.
 // (c) copyright 2021 by Jan Delgado
@@ -8,24 +8,24 @@ import (
 	auth "github.com/jandelgado/rabbitmq-http-auth/pkg"
 )
 
-type DemoAuthenticator struct{}
+type DemoAuth struct{}
 
-func (s DemoAuthenticator) String() string {
-	return "DemoAuthenticator"
+func (s DemoAuth) String() string {
+	return "DemoAuth"
 }
 
-func (s DemoAuthenticator) Resource(username, vhost, resource, name, permission string) auth.Decision {
+func (s DemoAuth) Resource(username, vhost, resource, name, permission string) auth.Decision {
 	return true
 }
 
-func (s DemoAuthenticator) User(username, password string) (auth.Decision, string) {
+func (s DemoAuth) User(username, password string) (auth.Decision, string) {
 	return username == "guest", "management administrator demo"
 }
 
-func (s DemoAuthenticator) VHost(username, vhost, ip string) auth.Decision {
+func (s DemoAuth) VHost(username, vhost, ip string) auth.Decision {
 	return true
 }
 
-func (s DemoAuthenticator) Topic(username, vhost, resource, name, permission, routingKey string) auth.Decision {
+func (s DemoAuth) Topic(username, vhost, resource, name, permission, routingKey string) auth.Decision {
 	return true
 }
