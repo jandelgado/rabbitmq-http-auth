@@ -1,4 +1,4 @@
-// rabbitmq-http-auth - Authenicator interface
+// rabbitmq-http-auth - AuthN/AuthZ interface
 // (c) copyright 2021 by Jan Delgado
 package rabbitmqauth
 
@@ -9,13 +9,13 @@ const (
 	Deny  Decision = false
 )
 
-// Authenticator instances make the actual decisions on authentication
-// requests by RabboitMQ. Every function returns the authentication decision,
-// which is always Allow or Deny.
+// Auth instances make the actual decisions on authentication and authorization
+// requests by RabboitMQ. Every function returns the decision, which is always
+// Allow or Deny.
 //
 // See https://github.com/rabbitmq/rabbitmq-server/tree/master/deps/rabbitmq_auth_backend_http
 // for a detailed description.
-type Authenticator interface {
+type Auth interface {
 	// User authenticates the given user. In addition to the decision, the tags
 	// associated with the user are returned.
 	User(username, password string) (Decision, string)

@@ -19,14 +19,16 @@ For details see https://github.com/rabbitmq/rabbitmq-server/tree/master/deps/rab
 
 ## Build your own service
 
-To build an RabbitMQ HTTP Auth Backend, you just need to implement the provided
-`Authenticator` interface, which will be called by `POST` requests to the paths
+To build a RabbitMQ HTTP Auth Backend, you just need to implement the provided
+`Auth` interface, which will be called by `POST` requests to the paths
 `/auth/user`, `/auth/vhost`, `/auth/topic` and `/auth/resource`:
 
 ```go
+package rabbitmqauth
+
 type Decision bool
 
-type Authenticator interface {
+type Auth interface {
 	// User authenticates the given user. In addition to the decision, the tags
 	// associated with the user are returned.
 	User(username, password string) (Decision, string)
@@ -41,8 +43,8 @@ type Authenticator interface {
 }
 ```
 
-Start a web server using your authenticator and the http router provided
-by the `rabbitmqauth.AuthServer.NewRouter()` function like:
+Start a web server using your Auth implementation and the http router provided
+by the `rabbitmqauth.AuthService.NewRouter()` function like:
 
 ```go
 package main
@@ -52,24 +54,24 @@ import (
 	"net/http"
 	"time"
 
-	auth "github.com/jandelgado/rabbitmq-http-auth/pkg"
+	rabbitmqauth "github.com/jandelgado/rabbitmq-http-auth/pkg"
 )
 
 const httpReadTimeout = 10 * time.Second
 const httpWriteTimeout = 10 * time.Second
 
 func main() {
-	authenticator := NewLogInterceptingAuthenticator(DemoAuthenticator{})
-	s := auth.NewAuthServer(authenticator)
+	auth := NewLogInterceptingAuth(DemoAuth{})
+	service := rabbitmqauth.NewAuthService(auth)
 
-	srv := &http.Server{
-		Handler:      s.NewRouter(),
+	server := &http.Server{
+		Handler:      service.NewRouter(),
 		Addr:         fmt.Sprintf(":%d", 8000),
 		WriteTimeout: httpWriteTimeout,
 		ReadTimeout:  httpReadTimeout,
 	}
 
-	err := srv.ListenAndServe()
+	err := server.ListenAndServe()
 
 	if err != nil {
 		panic(err)
@@ -91,7 +93,7 @@ $ curl  -XPOST localhost:8000/auth/user -d "username=john&password=test"
 deny
 ```
 
-Since the `DemoAuthenticator` only allows the `guest` user (but with any
+Since the `DemoAuth` only allows the `guest` user (but with any
 password), this is the expected result.
 
 ## Test with RabbitMQ
@@ -108,12 +110,12 @@ Then in another console, try to publish a message using [rabtap](TODO)
 $  echo "hello" | rabtap pub --uri amqp://guest:123@localhost:5672 --exchange amq.topic --routingkey "#"
 ```
 
-In the docker-compose log, should see the authenticator logging the request:
+In the docker-compose log, should see the auth server logging the request:
 ```
 auth-http_1  | 2021/04/18 21:28:01 auth user(u=guest) -> allow [management administrator demo]
 ```
 
-As the `DemoAuthenticator` allows any password for the guest user, you can 
+As the `DemoAuth` allows any password for the guest user, you can 
 try to change the password in the `rabtap` command or try to login on the 
 [management console](http://localhost:15672) with any password.
 

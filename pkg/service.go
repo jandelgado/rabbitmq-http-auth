@@ -7,12 +7,12 @@ import (
 	"net/http"
 )
 
-type AuthServer struct {
-	authenticator Authenticator
+type AuthService struct {
+	auth Auth
 }
 
-func NewAuthServer(authenticator Authenticator) AuthServer {
-	return AuthServer{authenticator}
+func NewAuthService(auth Auth) AuthService {
+	return AuthService{auth}
 }
 
 func (s Decision) String() string {
@@ -22,7 +22,7 @@ func (s Decision) String() string {
 	return "deny"
 }
 
-func validatePostArgs(args []string, r *http.Request) map[string]string {
+func postArgsToMap(args []string, r *http.Request) map[string]string {
 	result := map[string]string{}
 	for _, s := range args {
 		result[s] = r.PostFormValue(s)
@@ -30,9 +30,9 @@ func validatePostArgs(args []string, r *http.Request) map[string]string {
 	return result
 }
 
-func (s *AuthServer) userHandler(w http.ResponseWriter, r *http.Request) {
-	args := validatePostArgs([]string{"username", "password"}, r)
-	res, tags := s.authenticator.User(args["username"], args["password"])
+func (s *AuthService) userHandler(w http.ResponseWriter, r *http.Request) {
+	args := postArgsToMap([]string{"username", "password"}, r)
+	res, tags := s.auth.User(args["username"], args["password"])
 	if res {
 		fmt.Fprintf(w, "%s [%s]", res, tags)
 	} else {
@@ -40,26 +40,28 @@ func (s *AuthServer) userHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *AuthServer) vhostHandler(w http.ResponseWriter, r *http.Request) {
-	args := validatePostArgs([]string{"username", "vhost", "ip"}, r)
-	res := s.authenticator.VHost(args["username"], args["vhost"], args["ip"])
+func (s *AuthService) vhostHandler(w http.ResponseWriter, r *http.Request) {
+	args := postArgsToMap([]string{"username", "vhost", "ip"}, r)
+	res := s.auth.VHost(args["username"], args["vhost"], args["ip"])
 	fmt.Fprintf(w, "%s", res)
 }
 
-func (s *AuthServer) topicHandler(w http.ResponseWriter, r *http.Request) {
-	args := validatePostArgs([]string{"username", "vhost", "resource", "name", "permission", "routing_key"}, r)
-	res := s.authenticator.Topic(args["username"], args["vhost"],
+func (s *AuthService) topicHandler(w http.ResponseWriter, r *http.Request) {
+	args := postArgsToMap([]string{"username", "vhost", "resource", "name", "permission", "routing_key"}, r)
+	res := s.auth.Topic(args["username"], args["vhost"],
 		args["resource"], args["name"], args["permission"], args["routing_key"])
 	fmt.Fprintf(w, "%s", res)
 }
 
-func (s *AuthServer) resourceHandler(w http.ResponseWriter, r *http.Request) {
-	args := validatePostArgs([]string{"username", "vhost", "resource", "name", "permission"}, r)
-	res := s.authenticator.Resource(args["username"], args["vhost"],
+func (s *AuthService) resourceHandler(w http.ResponseWriter, r *http.Request) {
+	args := postArgsToMap([]string{"username", "vhost", "resource", "name", "permission"}, r)
+	res := s.auth.Resource(args["username"], args["vhost"],
 		args["resource"], args["name"], args["permission"])
 	fmt.Fprintf(w, "%s", res)
 }
 
+// postHandler passes a request to the given handler only if it is a POST
+// request, otherwise returning a 405
 func postHandler(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
@@ -71,7 +73,7 @@ func postHandler(handler func(http.ResponseWriter, *http.Request)) func(http.Res
 	}
 }
 
-func (s *AuthServer) NewRouter() http.Handler {
+func (s *AuthService) NewRouter() http.Handler {
 	router := http.NewServeMux()
 	router.HandleFunc("/auth/user", postHandler(s.userHandler))
 	router.HandleFunc("/auth/vhost", postHandler(s.vhostHandler))
